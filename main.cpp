@@ -2,10 +2,12 @@
 #include <cmath>
 #include <iostream>
 #include <vector>
+
+#include "ThreadPool.h"
 #define WIDTH 800
 #define HEIGHT 600
 
-#define sandscale 1  // How many pixels per grain of sand
+#define sandscale 4  // How many pixels per grain of sand
 #define ARRHEIGHT HEIGHT / sandscale
 #define ARRWIDTH WIDTH / sandscale
 #define FPS 60
@@ -58,25 +60,33 @@ sf::Color HSBtoRGB(float hue) {
     }
 }
 
-void printArray(sf::VertexArray &vertices, std::vector<std::vector<float>> arr, sf::RenderWindow &window) {
-    for (int i = 0; i < ARRHEIGHT; i++) {
-        for (int j = 0; j < ARRWIDTH; j++) {
+void printArrayPart(sf::VertexArray &vertices, const std::vector<std::vector<float>> &arr, int startRow, int endRow) {
+    for (int i = startRow; i < endRow; ++i) {
+        for (int j = 0; j < ARRWIDTH; ++j) {
             int index = 4 * (i + j * ARRHEIGHT);
-            if (arr[i][j] != 0) {
-                sf::Color color = HSBtoRGB(arr[i][j]);
-                vertices[index].color = color;
-                vertices[index + 1].color = color;
-                vertices[index + 2].color = color;
-                vertices[index + 3].color = color;
-            } else {
-                vertices[index].color = sf::Color::Black;
-                vertices[index + 1].color = sf::Color::Black;
-                vertices[index + 2].color = sf::Color::Black;
-                vertices[index + 3].color = sf::Color::Black;
-            }
+            sf::Color color = (arr[i][j] != 0) ? HSBtoRGB(arr[i][j]) : sf::Color::Black;
+            vertices[index].color = color;
+            vertices[index + 1].color = color;
+            vertices[index + 2].color = color;
+            vertices[index + 3].color = color;
         }
     }
-    window.draw(vertices);
+}
+
+void printArray(ThreadPool &pool, sf::VertexArray &vertices, const std::vector<std::vector<float>> &arr) {
+    int numThreads = std::thread::hardware_concurrency();
+    int rowsPerThread = ARRHEIGHT / numThreads;
+
+    std::vector<std::future<void>> futures;
+    for (int t = 0; t < numThreads; ++t) {
+        int startRow = t * rowsPerThread;
+        int endRow = (t == numThreads - 1) ? ARRHEIGHT : startRow + rowsPerThread;
+        futures.emplace_back(pool.enqueue(printArrayPart, std::ref(vertices), std::ref(arr), startRow, endRow));
+    }
+
+    for (auto &future : futures) {
+        future.get();
+    }
 }
 void Automata(std::vector<std::vector<float>> &arr, std::vector<std::vector<float>> &newArr) {
     for (int i = 0; i < ARRHEIGHT; i++)
@@ -87,7 +97,9 @@ void Automata(std::vector<std::vector<float>> &arr, std::vector<std::vector<floa
             float state = arr[i][j];
             if (state > 0) {
                 float below = (i + 1 < ARRHEIGHT) ? arr[i + 1][j] : -1;
-                int dir = (rand() % 2) * 2 - 1;
+                int dir = (rand() % 2) - 1;
+                if (dir == 0)
+                    dir = 1;
 
                 float belowA = -1;
                 float belowB = -1;
@@ -113,6 +125,7 @@ void Automata(std::vector<std::vector<float>> &arr, std::vector<std::vector<floa
 int main() {
     sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "Sand!");
 
+    sf::Color color(255, 255, 255);
     window.setFramerateLimit(FPS);
     srand(time(NULL));
     std::vector<std::vector<float>> arr(ARRHEIGHT, std::vector<float>(ARRWIDTH, 0));
@@ -120,6 +133,8 @@ int main() {
     sf::VertexArray vertices(sf::Quads, ARRHEIGHT * ARRWIDTH * 4);
     float hue = 0.f;
     bool buttonPressed = false;
+    // Create the thread pool
+    ThreadPool pool(std::thread::hardware_concurrency());
     for (int i = 0; i < ARRHEIGHT; ++i) {
         for (int j = 0; j < ARRWIDTH; ++j) {
             int index = 4 * (i + j * ARRHEIGHT);
@@ -152,7 +167,7 @@ int main() {
             sf::Vector2i mousePos = sf::Mouse::getPosition(window);
             int row = mousePos.y / sandscale;
             int col = mousePos.x / sandscale;
-            int extent = 15;
+            int extent = 10;
             for (int i = extent * -1; i < extent; i++) {
                 for (int j = extent * -1; j < extent; j++) {
                     if (row + i >= 0 && row + i < ARRHEIGHT && col + j >= 0 && col + j < ARRWIDTH) {
@@ -164,10 +179,10 @@ int main() {
                 }
             }
         }
-
-        Automata(arr, newArr);
         window.clear();
-        printArray(vertices, arr, window);
+        Automata(arr, newArr);
+        printArray(pool, vertices, arr);
+        window.draw(vertices);
         window.display();
     }
 
