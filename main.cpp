@@ -2,12 +2,10 @@
 #include <cmath>
 #include <iostream>
 #include <vector>
-
-#include "ThreadPool.h"
 #define WIDTH 800
 #define HEIGHT 600
 
-#define sandscale 4  // How many pixels per grain of sand
+#define sandscale 2  // How many pixels per grain of sand
 #define ARRHEIGHT HEIGHT / sandscale
 #define ARRWIDTH WIDTH / sandscale
 #define FPS 60
@@ -60,32 +58,28 @@ sf::Color HSBtoRGB(float hue) {
     }
 }
 
-void printArrayPart(sf::VertexArray &vertices, const std::vector<std::vector<float>> &arr, int startRow, int endRow) {
-    for (int i = startRow; i < endRow; ++i) {
+void setPixels(sf::Uint8 *pixels, const std::vector<std::vector<float>> &arr, const std::vector<std::vector<float>> &newArr) {
+    for (int i = 0; i < ARRHEIGHT; ++i) {
         for (int j = 0; j < ARRWIDTH; ++j) {
             int index = 4 * (i + j * ARRHEIGHT);
             sf::Color color = (arr[i][j] != 0) ? HSBtoRGB(arr[i][j]) : sf::Color::Black;
-            vertices[index].color = color;
-            vertices[index + 1].color = color;
-            vertices[index + 2].color = color;
-            vertices[index + 3].color = color;
+            pixels[index] = color.r;
+            pixels[index + 1] = color.g;
+            pixels[index + 2] = color.b;
+            pixels[index + 3] = 255;
         }
     }
 }
-
-void printArray(ThreadPool &pool, sf::VertexArray &vertices, const std::vector<std::vector<float>> &arr) {
-    int numThreads = std::thread::hardware_concurrency();
-    int rowsPerThread = ARRHEIGHT / numThreads;
-
-    std::vector<std::future<void>> futures;
-    for (int t = 0; t < numThreads; ++t) {
-        int startRow = t * rowsPerThread;
-        int endRow = (t == numThreads - 1) ? ARRHEIGHT : startRow + rowsPerThread;
-        futures.emplace_back(pool.enqueue(printArrayPart, std::ref(vertices), std::ref(arr), startRow, endRow));
-    }
-
-    for (auto &future : futures) {
-        future.get();
+void mapPixels(sf::Uint8 *pixels, sf::Uint8 *newPixels) {
+    for (int i = 0; i < HEIGHT; ++i) {
+        for (int j = 0; j < WIDTH; ++j) {
+            int index = 4 * (i + j * HEIGHT);
+            int arrIndex = 4 * (i / sandscale + (j / sandscale) * ARRHEIGHT);
+            newPixels[index] = pixels[arrIndex];
+            newPixels[index + 1] = pixels[arrIndex + 1];
+            newPixels[index + 2] = pixels[arrIndex + 2];
+            newPixels[index + 3] = pixels[arrIndex + 3];
+        }
     }
 }
 void Automata(std::vector<std::vector<float>> &arr, std::vector<std::vector<float>> &newArr) {
@@ -122,28 +116,22 @@ void Automata(std::vector<std::vector<float>> &arr, std::vector<std::vector<floa
     }
     arr.swap(newArr);
 }
+
 int main() {
     sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "Sand!");
-
-    sf::Color color(255, 255, 255);
     window.setFramerateLimit(FPS);
     srand(time(NULL));
+    sf::Texture texture;
+    texture.create(HEIGHT, WIDTH);
+    sf::Sprite sprite;
+    sprite.setRotation(90);
+    sprite.setScale(1, -1);
+    sf::Uint8 *pixels = new sf::Uint8[ARRWIDTH * ARRHEIGHT * 4];
+    sf::Uint8 *newPixels = new sf::Uint8[WIDTH * HEIGHT * 4];
     std::vector<std::vector<float>> arr(ARRHEIGHT, std::vector<float>(ARRWIDTH, 0));
     std::vector<std::vector<float>> newArr(ARRHEIGHT, std::vector<float>(ARRWIDTH, 0));
-    sf::VertexArray vertices(sf::Quads, ARRHEIGHT * ARRWIDTH * 4);
     float hue = 0.f;
     bool buttonPressed = false;
-    // Create the thread pool
-    ThreadPool pool(std::thread::hardware_concurrency());
-    for (int i = 0; i < ARRHEIGHT; ++i) {
-        for (int j = 0; j < ARRWIDTH; ++j) {
-            int index = 4 * (i + j * ARRHEIGHT);
-            vertices[index].position = sf::Vector2f(j * sandscale, i * sandscale);
-            vertices[index + 1].position = sf::Vector2f((j + 1) * sandscale, i * sandscale);
-            vertices[index + 2].position = sf::Vector2f((j + 1) * sandscale, (i + 1) * sandscale);
-            vertices[index + 3].position = sf::Vector2f(j * sandscale, (i + 1) * sandscale);
-        }
-    }
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -179,12 +167,15 @@ int main() {
                 }
             }
         }
-        window.clear();
         Automata(arr, newArr);
-        printArray(pool, vertices, arr);
-        window.draw(vertices);
+        setPixels(pixels, arr, newArr);
+        mapPixels(pixels, newPixels);
+        texture.update(newPixels);
+        sprite.setTexture(texture);
+        window.draw(sprite);
         window.display();
     }
-
+    delete[] pixels;
+    delete[] newPixels;
     return 0;
 }
