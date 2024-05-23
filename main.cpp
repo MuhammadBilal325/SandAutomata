@@ -62,10 +62,6 @@ void printArray(sf::VertexArray &vertices, std::vector<std::vector<float>> arr, 
     for (int i = 0; i < ARRHEIGHT; i++) {
         for (int j = 0; j < ARRWIDTH; j++) {
             int index = 4 * (i + j * ARRHEIGHT);
-            vertices[index].position = sf::Vector2f(j * sandscale, i * sandscale);
-            vertices[index + 1].position = sf::Vector2f((j + 1) * sandscale, i * sandscale);
-            vertices[index + 2].position = sf::Vector2f((j + 1) * sandscale, (i + 1) * sandscale);
-            vertices[index + 3].position = sf::Vector2f(j * sandscale, (i + 1) * sandscale);
             if (arr[i][j] != 0) {
                 sf::Color color = HSBtoRGB(arr[i][j]);
                 vertices[index].color = color;
@@ -90,12 +86,8 @@ void Automata(std::vector<std::vector<float>> &arr, std::vector<std::vector<floa
         for (int j = 0; j < ARRWIDTH; j++) {
             float state = arr[i][j];
             if (state > 0) {
-                float below = -1;
-                if (withinRows(i + 1))
-                    below = arr[i + 1][j];
-                int dir = (rand() % 2) - 1;
-                if (dir == 0)
-                    dir = 1;
+                float below = (i + 1 < ARRHEIGHT) ? arr[i + 1][j] : -1;
+                int dir = (rand() % 2) * 2 - 1;
 
                 float belowA = -1;
                 float belowB = -1;
@@ -116,12 +108,11 @@ void Automata(std::vector<std::vector<float>> &arr, std::vector<std::vector<floa
             }
         }
     }
-    arr = newArr;
+    arr.swap(newArr);
 }
 int main() {
     sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "Sand!");
 
-    sf::Color color(255, 255, 255);
     window.setFramerateLimit(FPS);
     srand(time(NULL));
     std::vector<std::vector<float>> arr(ARRHEIGHT, std::vector<float>(ARRWIDTH, 0));
@@ -129,6 +120,15 @@ int main() {
     sf::VertexArray vertices(sf::Quads, ARRHEIGHT * ARRWIDTH * 4);
     float hue = 0.f;
     bool buttonPressed = false;
+    for (int i = 0; i < ARRHEIGHT; ++i) {
+        for (int j = 0; j < ARRWIDTH; ++j) {
+            int index = 4 * (i + j * ARRHEIGHT);
+            vertices[index].position = sf::Vector2f(j * sandscale, i * sandscale);
+            vertices[index + 1].position = sf::Vector2f((j + 1) * sandscale, i * sandscale);
+            vertices[index + 2].position = sf::Vector2f((j + 1) * sandscale, (i + 1) * sandscale);
+            vertices[index + 3].position = sf::Vector2f(j * sandscale, (i + 1) * sandscale);
+        }
+    }
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -152,7 +152,7 @@ int main() {
             sf::Vector2i mousePos = sf::Mouse::getPosition(window);
             int row = mousePos.y / sandscale;
             int col = mousePos.x / sandscale;
-            int extent = 5;
+            int extent = 15;
             for (int i = extent * -1; i < extent; i++) {
                 for (int j = extent * -1; j < extent; j++) {
                     if (row + i >= 0 && row + i < ARRHEIGHT && col + j >= 0 && col + j < ARRWIDTH) {
@@ -167,7 +167,6 @@ int main() {
 
         Automata(arr, newArr);
         window.clear();
-
         printArray(vertices, arr, window);
         window.display();
     }
