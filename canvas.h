@@ -15,6 +15,7 @@ enum BlockType : unsigned short {
 struct Block {
     float color;
     BlockType type;
+    sf::Vector2i velocity;
 
     Block() : color(0), type(Empty){};
     Block(float color, BlockType type) : color(color), type(type){};
@@ -29,6 +30,7 @@ private:
     sf::Uint8* newPixels;
     sf::Texture texture;
     sf::Sprite sprite;
+    const float gravity = 9.8;
     const int blockColors[4][2] = {
         {0, 0},
         {10, 65},
@@ -75,6 +77,7 @@ public:
                     else {
                         arr[row + i][col + j].color = PingPong(color, colmin, colmax);
                         arr[row + i][col + j].type = type;
+                        arr[row + i][col + j].velocity = sf::Vector2i(1, 1);
                     }
                 }
             }
@@ -147,16 +150,32 @@ public:
                         int dir = (rand() % 2) - 1;
                         if (dir == 0)
                             dir = 1;
-                        if (withinRows(i + 1))
+                        if (withinRows(i + 1)) {
                             below = arr[i + 1][j].type;
-                        if (withinCols(j + dir) && withinRows(i + 1))
-                            belowA = arr[i + 1][j + dir].type;
-                        if (withinCols(j - dir) && withinRows(i + 1))
-                            belowB = arr[i + 1][j - dir].type;
-                        if (withinCols(j - dir))
-                            belowC = arr[i][j - dir].type;
-                        if (withinCols(j + dir))
-                            belowD = arr[i][j + dir].type;
+                            if (below == Empty)
+                                below = newArr[i + 1][j].type;
+
+                            if (withinCols(j + dir)) {
+                                belowA = arr[i + 1][j + dir].type;
+                                if (belowA == Empty)
+                                    belowA = newArr[i + 1][j + dir].type;
+                            }
+                            if (withinCols(j - dir)) {
+                                belowB = arr[i + 1][j - dir].type;
+                                if (belowB == Empty)
+                                    belowB = newArr[i + 1][j - dir].type;
+                            }
+                        }
+                        if (withinCols(j - 1)) {
+                            belowC = arr[i][j - 1].type;
+                            if (belowC == Empty)
+                                belowC = newArr[i][j - 1].type;
+                        }
+                        if (withinCols(j + 1)) {
+                            belowD = arr[i][j + 1].type;
+                            if (belowD == Empty)
+                                belowD = newArr[i][j + 1].type;
+                        }
 
                         if (below == Empty)
                             newArr[i + 1][j] = state;
@@ -165,9 +184,9 @@ public:
                         else if (belowB == Empty)
                             newArr[i + 1][j - dir] = state;
                         else if (belowC == Empty)
-                            newArr[i][j - dir] = state;
+                            newArr[i][j - 1] = state;
                         else if (belowD == Empty)
-                            newArr[i][j + dir] = state;
+                            newArr[i][j + 1] = state;
                         else
                             newArr[i][j] = state;
                     }
