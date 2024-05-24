@@ -4,13 +4,14 @@
 #include <vector>
 sf::Color HSBtoRGB(float hue);
 float PingPong(float t, float min, float max);
-enum BlockType {
+enum BlockType : unsigned short {
     Invalid,
     Empty,
     Sand,
     Water,
     Stone
 };
+
 struct Block {
     float color;
     BlockType type;
@@ -28,6 +29,12 @@ private:
     sf::Uint8* newPixels;
     sf::Texture texture;
     sf::Sprite sprite;
+    const int blockColors[4][2] = {
+        {0, 0},
+        {10, 65},
+        {170, 240},
+        {304, 306},
+    };
     int withinCols(int i) {
         return i >= 0 && i < arrwidth;
     }
@@ -55,13 +62,18 @@ public:
     void AddParticles(sf::Vector2i& mousepos, int extent, BlockType type, float color) {
         int row = mousepos.y / sandscale;
         int col = mousepos.x / sandscale;
+        int colmin = 0, colmax = 0;
+        if (type - 1 > 0) {
+            colmin = blockColors[type - 1][0];
+            colmax = blockColors[type - 1][1];
+        }
         for (int i = extent * -1; i < extent; i++) {
             for (int j = extent * -1; j < extent; j++) {
                 if (row + i >= 0 && row + i < arrheight && col + j >= 0 && col + j < arrwidth) {
                     if (arr[row + i][col + j].type != Empty || (rand() % 4 == 0))
                         continue;
                     else {
-                        arr[row + i][col + j].color = PingPong(color, 10, 65);
+                        arr[row + i][col + j].color = PingPong(color, colmin, colmax);
                         arr[row + i][col + j].type = type;
                     }
                 }
@@ -108,30 +120,56 @@ public:
             for (int j = 0; j < arrwidth; j++) {
                 Block state = arr[i][j];
                 if (state.type != Empty) {
-                    BlockType below = (i + 1 < arrheight) ? arr[i + 1][j].type : Invalid;
-                    int dir = (rand() % 2) - 1;
-                    if (dir == 0)
-                        dir = 1;
+                    if (state.type == Sand) {
+                        BlockType below = Invalid;
+                        if (withinRows(i + 1))
+                            below = arr[i + 1][j].type;
+                        int dir = (rand() % 2) - 1;
+                        if (dir == 0)
+                            dir = 1;
+                        BlockType belowA = Invalid;
+                        BlockType belowB = Invalid;
+                        if (withinCols(j + dir) && withinRows(i + 1))
+                            belowA = arr[i + 1][j + dir].type;
+                        if (withinCols(j - dir) && withinRows(i + 1))
+                            belowB = arr[i + 1][j - dir].type;
+                        if (below == Empty)
+                            newArr[i + 1][j] = state;
+                        else if (belowA == Empty)
+                            newArr[i + 1][j + dir] = state;
+                        else if (belowB == Empty)
+                            newArr[i + 1][j - dir] = state;
+                        else
+                            newArr[i][j] = state;
+                    } else if (state.type == Water) {
+                        BlockType below, belowA, belowB, belowC, belowD;  // Below, Below left, Below Right, Left, Right
+                        below = belowA = belowB = belowC = belowD = Invalid;
+                        int dir = (rand() % 2) - 1;
+                        if (dir == 0)
+                            dir = 1;
+                        if (withinRows(i + 1))
+                            below = arr[i + 1][j].type;
+                        if (withinCols(j + dir) && withinRows(i + 1))
+                            belowA = arr[i + 1][j + dir].type;
+                        if (withinCols(j - dir) && withinRows(i + 1))
+                            belowB = arr[i + 1][j - dir].type;
+                        if (withinCols(j - dir))
+                            belowC = arr[i][j - dir].type;
+                        if (withinCols(j + dir))
+                            belowD = arr[i][j + dir].type;
 
-                    BlockType belowA = Invalid;
-                    BlockType belowB = Invalid;
-                    if (withinCols(j + dir) && withinRows(i + 1)) {
-                        belowA = arr[i + 1][j + dir].type;
-                    }
-                    if (withinCols(j - dir) && withinRows(i + 1)) {
-                        belowB = arr[i + 1][j - dir].type;
-                    }
-                    if (below == Empty) {
-                        newArr[i + 1][j] = state;
-
-                    } else if (belowA == Empty) {
-                        newArr[i + 1][j + dir] = state;
-
-                    } else if (belowB == Empty) {
-                        newArr[i + 1][j - dir] = state;
-
-                    } else {
-                        newArr[i][j] = state;
+                        if (below == Empty)
+                            newArr[i + 1][j] = state;
+                        else if (belowA == Empty)
+                            newArr[i + 1][j + dir] = state;
+                        else if (belowB == Empty)
+                            newArr[i + 1][j - dir] = state;
+                        else if (belowC == Empty)
+                            newArr[i][j - dir] = state;
+                        else if (belowD == Empty)
+                            newArr[i][j + dir] = state;
+                        else
+                            newArr[i][j] = state;
                     }
                 }
             }
