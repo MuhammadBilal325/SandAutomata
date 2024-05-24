@@ -15,7 +15,7 @@ enum BlockType : unsigned short {
 struct Block {
     float color;
     BlockType type;
-    sf::Vector2i velocity;
+    sf::Vector2f velocity;
 
     Block() : color(0), type(Empty){};
     Block(float color, BlockType type) : color(color), type(type){};
@@ -77,7 +77,7 @@ public:
                     else {
                         arr[row + i][col + j].color = PingPong(color, colmin, colmax);
                         arr[row + i][col + j].type = type;
-                        arr[row + i][col + j].velocity = sf::Vector2i(1, 1);
+                        arr[row + i][col + j].velocity = sf::Vector2f(1, 1);
                     }
                 }
             }
@@ -124,9 +124,23 @@ public:
                 Block state = arr[i][j];
                 if (state.type != Empty) {
                     if (state.type == Sand) {
+                        // For sand we first go downwards and check the farthest we can get
+                        // within the bounds of the vertical velocity. If we find
+                        // a spot within that column we push our sand to it
+
+                        int y = 0;
                         BlockType below = Invalid;
-                        if (withinRows(i + 1))
-                            below = arr[i + 1][j].type;
+                        bool brokefall = 0;  // if our fall was broken reset velocity
+                        for (int k = 1; k <= state.velocity.y && k + i < arrheight - 1; k++) {
+                            if (arr[i + k][j].type == Empty) {
+                                below = Empty;
+                                y = i + k;
+                            } else {
+                                // This will only run if something got in our way while we were falling
+                                brokefall = 1;
+                                break;
+                            }
+                        }
                         int dir = (rand() % 2) - 1;
                         if (dir == 0)
                             dir = 1;
@@ -136,59 +150,64 @@ public:
                             belowA = arr[i + 1][j + dir].type;
                         if (withinCols(j - dir) && withinRows(i + 1))
                             belowB = arr[i + 1][j - dir].type;
-                        if (below == Empty)
-                            newArr[i + 1][j] = state;
-                        else if (belowA == Empty)
+
+                        if (below == Empty) {
+                            // If we were in freefall add more velocity
+                            if (!brokefall)
+                                state.velocity.y += 0.098;
+                            newArr[y][j] = state;
+                        } else if (belowA == Empty)
                             newArr[i + 1][j + dir] = state;
                         else if (belowB == Empty)
                             newArr[i + 1][j - dir] = state;
                         else
                             newArr[i][j] = state;
+
                     } else if (state.type == Water) {
-                        BlockType below, belowA, belowB, belowC, belowD;  // Below, Below left, Below Right, Left, Right
-                        below = belowA = belowB = belowC = belowD = Invalid;
-                        int dir = (rand() % 2) - 1;
-                        if (dir == 0)
-                            dir = 1;
-                        if (withinRows(i + 1)) {
-                            below = arr[i + 1][j].type;
-                            if (below == Empty)
-                                below = newArr[i + 1][j].type;
+                        // BlockType below, belowA, belowB, belowC, belowD;  // Below, Below left, Below Right, Left, Right
+                        // below = belowA = belowB = belowC = belowD = Invalid;
+                        // int dir = (rand() % 2) - 1;
+                        // if (dir == 0)
+                        //     dir = 1;
+                        // if (withinRows(i + 1)) {
+                        //     below = arr[i + 1][j].type;
+                        //     if (below == Empty)
+                        //         below = newArr[i + 1][j].type;
 
-                            if (withinCols(j + dir)) {
-                                belowA = arr[i + 1][j + dir].type;
-                                if (belowA == Empty)
-                                    belowA = newArr[i + 1][j + dir].type;
-                            }
-                            if (withinCols(j - dir)) {
-                                belowB = arr[i + 1][j - dir].type;
-                                if (belowB == Empty)
-                                    belowB = newArr[i + 1][j - dir].type;
-                            }
-                        }
-                        if (withinCols(j - 1)) {
-                            belowC = arr[i][j - 1].type;
-                            if (belowC == Empty)
-                                belowC = newArr[i][j - 1].type;
-                        }
-                        if (withinCols(j + 1)) {
-                            belowD = arr[i][j + 1].type;
-                            if (belowD == Empty)
-                                belowD = newArr[i][j + 1].type;
-                        }
+                        //     if (withinCols(j + dir)) {
+                        //         belowA = arr[i + 1][j + dir].type;
+                        //         if (belowA == Empty)
+                        //             belowA = newArr[i + 1][j + dir].type;
+                        //     }
+                        //     if (withinCols(j - dir)) {
+                        //         belowB = arr[i + 1][j - dir].type;
+                        //         if (belowB == Empty)
+                        //             belowB = newArr[i + 1][j - dir].type;
+                        //     }
+                        // }
+                        // if (withinCols(j - 1)) {
+                        //     belowC = arr[i][j - 1].type;
+                        //     if (belowC == Empty)
+                        //         belowC = newArr[i][j - 1].type;
+                        // }
+                        // if (withinCols(j + 1)) {
+                        //     belowD = arr[i][j + 1].type;
+                        //     if (belowD == Empty)
+                        //         belowD = newArr[i][j + 1].type;
+                        // }
 
-                        if (below == Empty)
-                            newArr[i + 1][j] = state;
-                        else if (belowA == Empty)
-                            newArr[i + 1][j + dir] = state;
-                        else if (belowB == Empty)
-                            newArr[i + 1][j - dir] = state;
-                        else if (belowC == Empty)
-                            newArr[i][j - 1] = state;
-                        else if (belowD == Empty)
-                            newArr[i][j + 1] = state;
-                        else
-                            newArr[i][j] = state;
+                        // if (below == Empty)
+                        //     newArr[i + 1][j] = state;
+                        // else if (belowA == Empty)
+                        //     newArr[i + 1][j + dir] = state;
+                        // else if (belowB == Empty)
+                        //     newArr[i + 1][j - dir] = state;
+                        // else if (belowC == Empty)
+                        //     newArr[i][j - 1] = state;
+                        // else if (belowD == Empty)
+                        //     newArr[i][j + 1] = state;
+                        // else
+                        //     newArr[i][j] = state;
                     }
                 }
             }

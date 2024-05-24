@@ -10,7 +10,7 @@
 
 int main() {
     sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "Sand!");
-    Canvas canvas(WIDTH, HEIGHT, 5);
+    Canvas canvas(WIDTH, HEIGHT, 2);
     window.setFramerateLimit(FPS);
     srand(time(NULL));
     float hue = 0.f;
