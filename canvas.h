@@ -24,12 +24,15 @@ class Canvas {
 private:
     int width, height, sandscale;
     int arrheight, arrwidth;
+    int amount = 0;
     std::vector<std::vector<Block>> arr;
     std::vector<std::vector<Block>> newArr;
     sf::Uint8* pixels;
     sf::Uint8* newPixels;
     sf::Texture texture;
     sf::Sprite sprite;
+    sf::Font font;
+    sf::Text text;
     const float gravity = 9.8;
     const int blockColors[4][2] = {
         {0, 0},
@@ -56,6 +59,11 @@ public:
         newArr = std::vector<std::vector<Block>>(arrheight, std::vector<Block>(arrwidth));
         pixels = new sf::Uint8[width * height * 4];
         newPixels = new sf::Uint8[width * height * 4];
+        font.loadFromFile("arial.ttf");
+        text.setFont(font);
+        text.setCharacterSize(24);
+        text.setFillColor(sf::Color::White);
+        text.setPosition(10, 10);
     }
     ~Canvas() {
         delete[] pixels;
@@ -112,7 +120,10 @@ public:
         sprite.setTexture(texture);
         window.draw(sprite);
     }
-
+    void drawAmount(sf::RenderWindow& window) {
+        text.setString("Amount: " + std::to_string(amount));
+        window.draw(text);
+    }
     void runAutomata() {
         for (int i = 0; i < arrheight; i++)
             for (int j = 0; j < arrwidth; j++) {
@@ -212,6 +223,11 @@ public:
                 }
             }
         }
+        amount = 0;
+        for (int i = 0; i < arrheight; i++)
+            for (int j = 0; j < arrwidth; j++)
+                if (newArr[i][j].type != Empty)
+                    amount++;
         arr.swap(newArr);
         setPixels();
         mapPixels();

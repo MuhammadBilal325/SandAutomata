@@ -10,7 +10,7 @@
 
 int main() {
     sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "Sand!");
-    Canvas canvas(WIDTH, HEIGHT, 2);
+    Canvas canvas(WIDTH, HEIGHT, 4);
     window.setFramerateLimit(FPS);
     srand(time(NULL));
     float hue = 0.f;
@@ -46,6 +46,7 @@ int main() {
         window.clear();
         canvas.runAutomata();
         canvas.draw(window);
+        //   canvas.drawAmount(window);
         window.display();
     }
     return 0;
