@@ -46,7 +46,7 @@ int main() {
         window.clear();
         canvas.runAutomata();
         canvas.draw(window);
-        //   canvas.drawAmount(window);
+        canvas.drawAmount(window);
         window.display();
     }
     return 0;

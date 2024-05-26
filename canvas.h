@@ -162,18 +162,27 @@ public:
                         if (withinCols(j - dir) && withinRows(i + 1))
                             belowB = arr[i + 1][j - dir].type;
 
+                        // First stage: Calculate new positions without updating newArr
+                        int newX = j, newY = i;
                         if (below == Empty) {
                             // If we were in freefall add more velocity
                             if (!brokefall)
                                 state.velocity.y += 0.098;
-                            newArr[y][j] = state;
-                        } else if (belowA == Empty)
-                            newArr[i + 1][j + dir] = state;
-                        else if (belowB == Empty)
-                            newArr[i + 1][j - dir] = state;
-                        else
-                            newArr[i][j] = state;
+                            newY = y;
+                        } else if (belowA == Empty) {
+                            newX = j + dir;
+                            newY = i + 1;
+                        } else if (belowB == Empty) {
+                            newX = j - dir;
+                            newY = i + 1;
+                        }
 
+                        // Second stage: Update newArr if the position is empty
+                        if (newArr[newY][newX].type == Empty) {
+                            newArr[newY][newX] = state;
+                        } else {
+                            newArr[i][j] = state;
+                        }
                     } else if (state.type == Water) {
                         // BlockType below, belowA, belowB, belowC, belowD;  // Below, Below left, Below Right, Left, Right
                         // below = belowA = belowB = belowC = belowD = Invalid;
