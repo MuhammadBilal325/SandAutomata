@@ -15,6 +15,7 @@ int main() {
     srand(time(NULL));
     float hue = 0.f;
     bool buttonPressed = false;
+    bool isPaused = false;
     BlockType type = Sand;
     while (window.isOpen()) {
         sf::Event event;
@@ -32,8 +33,10 @@ int main() {
             if (event.type == sf::Event::KeyPressed) {
                 if (event.key.code == sf::Keyboard::S)
                     type = Sand;
-                if (event.key.code == sf::Keyboard::W)
+                else if (event.key.code == sf::Keyboard::W)
                     type = Water;
+                else if (event.key.code == sf::Keyboard::C)
+                    canvas.clear();
             }
         }
         hue += 0.5;
@@ -41,7 +44,7 @@ int main() {
             hue = 0.f;
         if (buttonPressed) {
             sf::Vector2i mousepos = sf::Mouse::getPosition(window);
-            canvas.AddParticles(mousepos, 5, type, hue);
+            canvas.AddParticles(mousepos, 2, type, hue);
         }
         window.clear();
         canvas.runAutomata();

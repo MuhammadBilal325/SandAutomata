@@ -126,24 +126,22 @@ public:
     }
     void runAutomata() {
         for (int i = 0; i < arrheight; i++)
-            for (int j = 0; j < arrwidth; j++) {
-                newArr[i][j].color = 0;
+            for (int j = 0; j < arrwidth; j++)
                 newArr[i][j].type = Empty;
-            }
-        for (int i = 0; i < arrheight; i++) {
+        for (int i = arrheight - 1; i >= 0; i--) {
             for (int j = 0; j < arrwidth; j++) {
-                Block state = arr[i][j];
-                if (state.type != Empty) {
+                if (arr[i][j].type != Empty) {
+                    Block state = arr[i][j];
+                    arr[i][j].type = Empty;
                     if (state.type == Sand) {
                         // For sand we first go downwards and check the farthest we can get
                         // within the bounds of the vertical velocity. If we find
                         // a spot within that column we push our sand to it
-
                         int y = 0;
                         BlockType below = Invalid;
                         bool brokefall = 0;  // if our fall was broken reset velocity
-                        for (int k = 1; k <= state.velocity.y && k + i < arrheight - 1; k++) {
-                            if (arr[i + k][j].type == Empty) {
+                        for (int k = 1; k <= state.velocity.y && k + i < arrheight; k++) {
+                            if (newArr[i + k][j].type == Empty) {
                                 below = Empty;
                                 y = i + k;
                             } else {
@@ -153,14 +151,18 @@ public:
                             }
                         }
                         int dir = (rand() % 2) - 1;
-                        if (dir == 0)
-                            dir = 1;
+                        // if (dir == 0)
+                        dir = 1;
                         BlockType belowA = Invalid;
                         BlockType belowB = Invalid;
-                        if (withinCols(j + dir) && withinRows(i + 1))
-                            belowA = arr[i + 1][j + dir].type;
-                        if (withinCols(j - dir) && withinRows(i + 1))
-                            belowB = arr[i + 1][j - dir].type;
+                        if (withinCols(j + dir) && withinRows(i + 1)) {
+                            if (arr[i][j + dir].type == Empty)
+                                belowA = newArr[i + 1][j + dir].type;
+                        }
+                        if (withinCols(j - dir) && withinRows(i + 1)) {
+                            if (arr[i][j - dir].type == Empty)
+                                belowB = newArr[i + 1][j - dir].type;
+                        }
 
                         if (below == Empty) {
                             // If we were in freefall add more velocity
@@ -229,6 +231,13 @@ public:
                 if (newArr[i][j].type != Empty)
                     amount++;
         arr.swap(newArr);
+        setPixels();
+        mapPixels();
+    }
+    void clear() {
+        for (int i = 0; i < arrheight; i++)
+            for (int j = 0; j < arrwidth; j++)
+                arr[i][j].type = Empty;
         setPixels();
         mapPixels();
     }
