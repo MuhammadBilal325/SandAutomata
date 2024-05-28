@@ -177,50 +177,45 @@ public:
                             newArr[i][j] = state;
 
                     } else if (state.type == Water) {
-                        // BlockType below, belowA, belowB, belowC, belowD;  // Below, Below left, Below Right, Left, Right
-                        // below = belowA = belowB = belowC = belowD = Invalid;
-                        // int dir = (rand() % 2) - 1;
-                        // if (dir == 0)
-                        //     dir = 1;
-                        // if (withinRows(i + 1)) {
-                        //     below = arr[i + 1][j].type;
-                        //     if (below == Empty)
-                        //         below = newArr[i + 1][j].type;
+                        BlockType below, belowA, belowB, belowC, belowD;  // Below, Below left, Below Right, Left, Right
+                        below = belowA = belowB = belowC = belowD = Invalid;
+                        int dir = (rand() % 2) - 1;
+                        if (dir == 0)
+                            dir = 1;
+                        if (withinRows(i + 1)) {
+                            below = newArr[i + 1][j].type;
+                            if (withinCols(j + dir)) {
+                                if (arr[i][j + dir].type == Empty)
+                                    belowA = newArr[i + 1][j + dir].type;
+                            }
+                            if (withinCols(j - dir)) {
+                                if (arr[i][j - dir].type == Empty)
+                                    belowB = newArr[i + 1][j - dir].type;
+                            }
+                        }
+                        if (withinCols(j - dir)) {
+                            belowC = arr[i][j - dir].type;
+                            if (belowC == Empty)
+                                belowC = newArr[i][j - dir].type;
+                        }
+                        if (withinCols(j + dir)) {
+                            belowD = newArr[i][j + dir].type;
+                            if (belowD == Empty)
+                                belowD = newArr[i][j + dir].type;
+                        }
 
-                        //     if (withinCols(j + dir)) {
-                        //         belowA = arr[i + 1][j + dir].type;
-                        //         if (belowA == Empty)
-                        //             belowA = newArr[i + 1][j + dir].type;
-                        //     }
-                        //     if (withinCols(j - dir)) {
-                        //         belowB = arr[i + 1][j - dir].type;
-                        //         if (belowB == Empty)
-                        //             belowB = newArr[i + 1][j - dir].type;
-                        //     }
-                        // }
-                        // if (withinCols(j - 1)) {
-                        //     belowC = arr[i][j - 1].type;
-                        //     if (belowC == Empty)
-                        //         belowC = newArr[i][j - 1].type;
-                        // }
-                        // if (withinCols(j + 1)) {
-                        //     belowD = arr[i][j + 1].type;
-                        //     if (belowD == Empty)
-                        //         belowD = newArr[i][j + 1].type;
-                        // }
-
-                        // if (below == Empty)
-                        //     newArr[i + 1][j] = state;
-                        // else if (belowA == Empty)
-                        //     newArr[i + 1][j + dir] = state;
-                        // else if (belowB == Empty)
-                        //     newArr[i + 1][j - dir] = state;
-                        // else if (belowC == Empty)
-                        //     newArr[i][j - 1] = state;
-                        // else if (belowD == Empty)
-                        //     newArr[i][j + 1] = state;
-                        // else
-                        //     newArr[i][j] = state;
+                        if (below == Empty)
+                            newArr[i + 1][j] = state;
+                        else if (belowA == Empty)
+                            newArr[i + 1][j + dir] = state;
+                        else if (belowB == Empty)
+                            newArr[i + 1][j - dir] = state;
+                        else if (belowC == Empty)
+                            newArr[i][j - dir] = state;
+                        else if (belowD == Empty)
+                            newArr[i][j + dir] = state;
+                        else
+                            newArr[i][j] = state;
                     }
                 }
             }

@@ -37,6 +37,8 @@ int main() {
                     type = Water;
                 else if (event.key.code == sf::Keyboard::C)
                     canvas.clear();
+                else if (event.key.code == sf::Keyboard::P)
+                    canvas.runAutomata();
             }
         }
         hue += 0.5;
